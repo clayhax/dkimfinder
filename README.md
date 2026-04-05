@@ -95,8 +95,8 @@ For each selector:
 3. Validates presence of:
 
    * `v=DKIM1`
-   * `p=` (public key)
-
+   * `p=`
+   * `k=rsa`
 ---
 
 ## Performance
