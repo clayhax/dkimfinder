@@ -10,7 +10,7 @@ Built for security professionals, pentesters, and OSINT workflows to quickly enu
 
 * Scans a list of common DKIM selectors against a target domain
 * Parallelized lookups for speed (uses `xargs -P`)
-* Automatically detects valid DKIM records (`v=DKIM1`, `p=`)
+* Automatically detects valid DKIM records (`v=DKIM1`, `p=`, `k=rsa`)
 * Handles CNAME-based DKIM configurations
 * Clean CLI output with color + ASCII banner
 * Saves valid results to file
