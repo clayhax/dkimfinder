@@ -4,6 +4,9 @@ A fast, parallelized Bash tool for discovering valid DKIM selectors for a given 
 
 Built for security professionals, pentesters, and OSINT workflows to quickly enumerate and validate DKIM records at scale.
 
+<p align="center">
+  <img src="screenshots/dkimfinder-demo.png" width="800">
+</p>
 ---
 
 ## Features
