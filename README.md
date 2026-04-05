@@ -112,7 +112,11 @@ For each selector:
 
 ---
 
-## Author
+## ⚠ Disclaimer
+
+This tool is intended for **authorized security testing only**.
+
+## 👤 Author
 
 clayhax
 
