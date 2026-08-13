@@ -19,8 +19,14 @@ print_banner() {
 
     printf '\n          %bv1.1%b by cl4yh4x\n\n' "$green" "$nc"
   else
-    printf '%bdkim%bfinder\n' "$green" "$nc"
-    printf 'v1.1 by cl4yh4x\n\n'
+    printf '%b\n' \
+"${green}    _ _    _            ${nc}__ _           _
+${green} __| | | _(_)_ __ ___ ${nc}/ _(_)_ __   __| | ___ _ __
+${green}/ _\` | |/ / | '_ \` _ \\${nc}| |_| | '_ \\ / _\` |/ _ \\ '__|
+${green}| (_| |   <| | | | | | |${nc}  _| | | | | (_| |  __/ |
+${green} \\__,_|_|\\_\\_|_| |_| |_|${nc}_| |_|_| |_|\\__,_|\\___|_|
+
+          ${green}v1.1${nc} by cl4yh4x"
   fi
 }
 
