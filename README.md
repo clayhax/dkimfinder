@@ -39,9 +39,17 @@ sudo apt install dnsutils figlet -y
 ## Usage
 
 ```bash
-./dkimfinder.sh domain.com
+./dkimfinder.sh example.com
 ```
-
+```bash
+./dkimfinder.sh example.com example2.com example3.com
+```
+```bash
+./dkimfinder.sh example.com,example2.com,example3.com
+```
+```bash
+./dkimfinder.sh -d domains.lst
+```
 ---
 
 ## Input
@@ -72,6 +80,8 @@ Valid DKIM selectors are printed to the terminal and saved to:
 ```bash
 valid-selectors-domain-com.txt
 ```
+
+Each domain gets its own output file.
 
 Example output:
 
@@ -107,7 +117,7 @@ For each selector:
 
 * Uses parallel DNS resolution (`xargs -P`)
 * Default concurrency: **20 threads**
-
+* When scanning multiple domains, domains are processed sequentially while selector lookups for each domain are performed in parallel. This prevents bulk scans from creating an excessive number of simultaneous DNS queries.
 ---
 
 ## Customization

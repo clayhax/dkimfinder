@@ -1,8 +1,12 @@
 #!/bin/bash
 
-# Green color for selector
+# dkimfinder v1.1 by cl4yh4x
+
+# Green color
 green=$'\033[0;32m'
 nc=$'\033[0m'
+
+selector_file="selectors.txt"
 
 print_banner() {
   if command -v figlet >/dev/null 2>&1; then
@@ -13,38 +17,23 @@ print_banner() {
       printf '%b%s%b%s\n' "$green" "${left[$i]}" "$nc" "${right[$i]}"
     done
 
-    printf '\n          %bv1.1%b by clayhax\n\n' "$green" "$nc"
+    printf '\n          %bv1.1%b by cl4yh4x\n\n' "$green" "$nc"
   else
-    printf '%b\n' \
-"${green}    _ _    _            ${nc}__ _           _
-${green} __| | | _(_)_ __ ___ ${nc}/ _(_)_ __   __| | ___ _ __
-${green}/ _\` | |/ / | '_ \` _ \\${nc}| |_| | '_ \\ / _\` |/ _ \\ '__|
-${green}| (_| |   <| | | | | | |${nc}  _| | | | | (_| |  __/ |
-${green} \\__,_|_|\\_\\_|_| |_| |_|${nc}_| |_|_| |_|\\__,_|\\___|_|
-
-          ${green}v1.1${nc} by clayhax"
+    printf '%bdkim%bfinder\n' "$green" "$nc"
+    printf 'v1.1 by cl4yh4x\n\n'
   fi
 }
 
-if [ -z "$1" ]; then
+usage() {
   print_banner
-  echo "Usage: $0 domain.com"
+
+  echo "Usage:"
+  echo "  $0 domain.com"
+  echo "  $0 domain1.com domain2.com domain3.com"
+  echo "  $0 domain1.com,domain2.com,domain3.com"
+  echo "  $0 -d domains.lst"
   exit 1
-fi
-
-domain="$1"
-print_banner
-selector_file="selectors.txt"
-output_file="valid-selectors-${domain//./-}.txt"
-temp_dir=$(mktemp -d -t dkimcheck-XXXXXXXX)
-total=$(wc -l < "$selector_file")
-count=0
-
-echo -e "\nValid DKIM selectors for $domain:"
-echo "-----------------------------------"
-
-# Export vars for parallel environment
-export domain temp_dir green nc
+}
 
 # Function to scan one selector
 scan_selector() {
@@ -60,27 +49,118 @@ scan_selector() {
     full_record=$(dig TXT "$fqdn" +short | tr -d '"' | paste -sd '' -)
   fi
 
-  if echo "$full_record" | grep -Eq '^(v=DKIM1|k=rsa|.*p=)' ; then
+  if echo "$full_record" | grep -Eq '^(v=DKIM1|k=rsa|.*p=)'; then
     echo -e "${fqdn} | ${full_record}\n" > "$temp_dir/$selector.dkim"
     echo -e "\n${green}${selector}${nc}._domainkey.${domain} | ${full_record}"
   fi
 }
 
 export -f scan_selector
+export green nc
 
-# Parallel execution
-{
+# Scan a single domain
+scan_domain() {
+  domain="$1"
+  output_file="valid-selectors-${domain//./-}.txt"
+  temp_dir=$(mktemp -d -t dkimcheck-XXXXXXXX)
+
+  export domain temp_dir
+
+  echo
+  echo "Valid DKIM selectors for $domain:"
+  echo "-----------------------------------"
+
   while read -r selector; do
+    [[ -z "$selector" ]] && continue
+    [[ "$selector" =~ ^[[:space:]]*# ]] && continue
     echo "$selector"
-  done < "$selector_file"
-} | xargs -P 20 -I{} bash -c 'scan_selector "$@"' _ {}
+  done < "$selector_file" |
+    xargs -r -P 20 -I{} bash -c 'scan_selector "$@"' _ {}
 
-# Combine and report
-if compgen -G "$temp_dir/*.dkim" > /dev/null; then
-  cat "$temp_dir"/*.dkim > "$output_file"
-  echo -e "\nResults saved to $output_file"
-else
-  echo -e "\nNo DKIM records found for $domain"
+  if compgen -G "$temp_dir/*.dkim" > /dev/null; then
+    cat "$temp_dir"/*.dkim > "$output_file"
+    echo -e "\nResults saved to $output_file"
+  else
+    echo -e "\nNo DKIM records found for $domain"
+  fi
+
+  rm -rf "$temp_dir"
+}
+
+# Check dependencies
+if ! command -v dig >/dev/null 2>&1; then
+  echo "Error: dig is required but was not found."
+  echo "Install it with: sudo apt install dnsutils"
+  exit 1
 fi
 
-rm -rf "$temp_dir"
+# Check selector file
+if [[ ! -f "$selector_file" ]]; then
+  echo "Error: $selector_file not found."
+  exit 1
+fi
+
+# No arguments
+if [[ $# -eq 0 ]]; then
+  usage
+fi
+
+domains=()
+
+# Domain list mode
+if [[ "$1" == "-d" ]]; then
+
+  if [[ -z "${2:-}" ]]; then
+    echo "Error: -d requires a domain list."
+    echo
+    usage
+  fi
+
+  domain_file="$2"
+
+  if [[ ! -f "$domain_file" ]]; then
+    echo "Error: Domain file '$domain_file' not found."
+    exit 1
+  fi
+
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    # Remove comments
+    line="${line%%#*}"
+
+    # Support comma-separated entries inside the file too
+    line="${line//,/ }"
+
+    for entry in $line; do
+      [[ -n "$entry" ]] && domains+=("$entry")
+    done
+  done < "$domain_file"
+
+else
+
+  # Positional domain arguments
+  # Supports either spaces or commas
+  for arg in "$@"; do
+    IFS=',' read -ra entries <<< "$arg"
+
+    for entry in "${entries[@]}"; do
+      entry="${entry#"${entry%%[![:space:]]*}"}"
+      entry="${entry%"${entry##*[![:space:]]}"}"
+
+      [[ -n "$entry" ]] && domains+=("$entry")
+    done
+  done
+
+fi
+
+if [[ ${#domains[@]} -eq 0 ]]; then
+  echo "Error: No domains supplied."
+  exit 1
+fi
+
+print_banner
+
+echo "Domains queued: ${#domains[@]}"
+
+for domain in "${domains[@]}"; do
+  scan_domain "$domain"
+done
