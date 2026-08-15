@@ -40,7 +40,7 @@ usage() {
   echo "  $0 domain1.com domain2.com domain3.com"
   echo "  $0 domain1.com,domain2.com,domain3.com"
   echo "  $0 -d FILE  Read target domains from FILE"
-  echo "  --no-banner Suppress the ACSII banner"
+  echo "  --no-banner Suppress the ASCII banner"
   exit 1
 }
 
@@ -66,6 +66,18 @@ scan_selector() {
 
 export -f scan_selector
 export green nc
+
+# helper
+valid_domain() {
+  local d="$1"
+
+  # Reject empty values and anything that looks like an option
+  [[ -n "$d" ]] || return 1
+  [[ "$d" != -* ]] || return 1
+
+  # Basic hostname/domain validation
+  [[ "$d" =~ ^([A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+[A-Za-z]{2,63}$ ]]
+}
 
 # Scan a single domain
 scan_domain() {
@@ -110,6 +122,12 @@ for arg in "$@"; do
 done
 
 set -- "${args[@]}"
+
+case "${1:-}" in
+  -h|--help)
+    usage
+    ;;
+esac
 
 # Check dependencies
 if ! command -v dig >/dev/null 2>&1; then
@@ -180,6 +198,15 @@ if [[ ${#domains[@]} -eq 0 ]]; then
   echo "Error: No domains supplied."
   exit 1
 fi
+
+# Validate all domains before beginning scan
+for domain in "${domains[@]}"; do
+  if ! valid_domain "$domain"; then
+    echo "Error: Invalid domain: $domain" >&2
+    echo "Use -h or --help for usage." >&2
+    exit 1
+  fi
+done
 
 print_banner
 
