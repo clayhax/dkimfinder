@@ -7,9 +7,11 @@ green=$'\033[0;32m'
 nc=$'\033[0m'
 
 selector_file="selectors.txt"
+show_banner=true
 
 print_banner() {
-  if command -v figlet >/dev/null 2>&1; then
+    [[ "$show_banner" == false ]] && return
+    if command -v figlet >/dev/null 2>&1; then
     mapfile -t left < <(figlet -f small "dkim")
     mapfile -t right < <(figlet -f small "finder")
 
@@ -37,7 +39,8 @@ usage() {
   echo "  $0 domain.com"
   echo "  $0 domain1.com domain2.com domain3.com"
   echo "  $0 domain1.com,domain2.com,domain3.com"
-  echo "  $0 -d domains.lst"
+  echo "  $0 -d FILE  Read target domains from FILE"
+  echo "  --no-banner Suppress the ACSII banner"
   exit 1
 }
 
@@ -92,6 +95,21 @@ scan_domain() {
 
   rm -rf "$temp_dir"
 }
+
+args=()
+
+for arg in "$@"; do
+  case "$arg" in
+    --no-banner)
+      show_banner=false
+      ;;
+    *)
+      args+=("$arg")
+      ;;
+  esac
+done
+
+set -- "${args[@]}"
 
 # Check dependencies
 if ! command -v dig >/dev/null 2>&1; then
